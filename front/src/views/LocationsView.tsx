@@ -16,7 +16,7 @@ export default function LocationsView() {
                     <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={false} alert={undefined} link={'/stats'} />
                     <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
                     <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-                    <SidebarItem icon={<MapPinArea size={32} />} text={"Locations"} active={true} alert={undefined} link={"/locations"} />
+                    <SidebarItem icon={<MapPinArea size={32} />} text={"Ubicaciones"} active={true} alert={undefined} link={"/locations"} />
 
                 </Sidebar>
                 <div className="flex-1">

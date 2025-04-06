@@ -8,13 +8,13 @@ export default function Parcelas({ data }: any) {
   if (!parcelas) return <Spinner />
   return (
     <>
-      <div className="max-w-screen-xl mx-auto">
+      <div className="max-w-screen-xl mx-auto px-6">
         <h2 className="text-3xl font-semibold mb-5">Parcelas</h2>
         <div className="md:grid md:grid-cols-4 gap-5">
 
           {parcelas.map((parcela: any) => (
             <div key={parcela.id} className="bg-white p-5 rounded-lg [&>div]:mb-2 mb-5">
-              <h4 className="textl-lg font-semibold mb-3">{parcela.nombre}</h4>
+              <h4 className="textl-xl font-semibold mb-3 text-indigo-400">{parcela.nombre}</h4>
               <div className="flex gap-3 items-center">
                 <MapPin size={24}/>
                 <p>{parcela.ubicacion}</p>

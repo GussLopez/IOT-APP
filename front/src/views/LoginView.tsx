@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { isAxiosError } from "axios";
@@ -24,7 +24,7 @@ export default function LoginView() {
         const { data } = await api.post(`/api/auth/login`, formData)
 
         localStorage.setItem('AUTH_TOKEN', data)
-        toast.success('Inicio de sesión correcto')
+        toast.success('Correct login')
         setTimeout(() => {
             navigate('/')
             window.location.reload()
@@ -84,7 +84,7 @@ export default function LoginView() {
                         )}
                     </div>
                     <div className="text-end my-2 text-[15px]">
-                        <a href="#" className="text-gray-400 hover:text-indigo-500">Olvidaste tu contraseña?</a>
+                        <a href="#" className="text-gray-400 hover:text-indigo-500">Forgot your password?</a>
                     </div>
                     <button
                         type="submit"
@@ -93,7 +93,7 @@ export default function LoginView() {
                         Login
                     </button>
                     <div className="text-center my-3 text-gray-400">
-                        <p>No tienes cuenta? <a href="/auth/register" className="text-gray-500 font-semibold underline hover:text-indigo-500"> Registrate aquí</a></p>
+                        <p>Dont have account? <Link to="/auth/register" className="text-gray-500 font-semibold underline hover:text-indigo-500"> Create one here</Link></p>
                     </div>
                 </form>
             </div>

@@ -1,12 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { SquaresFour, ChartLine, MapPinArea, Clock, Trash } from "@phosphor-icons/react"
+import { SquaresFour, ChartLine, Clock, Trash, Drop } from "@phosphor-icons/react"
 import Sidebar, { SidebarItem } from "../components/Sidebar"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import axios from "axios"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import Spinner from "../components/Spinner"
 
 export default function HistorialView() {
   const [historicalData, setHistoricalData] = useState<any[]>([])
@@ -21,7 +22,7 @@ export default function HistorialView() {
         setHistoricalData(response.data)
         setLoading(false)
       } catch (error) {
-        console.error("Error al obtener datos históricos:", error)
+        console.error("Error getting the data:", error)
         setLoading(false)
       }
     }
@@ -50,46 +51,46 @@ export default function HistorialView() {
           <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={false} alert={undefined} link={"/stats"} />
           <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={true} alert={undefined} link={"/historial"} />
           <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-          <SidebarItem icon={<MapPinArea size={32} />} text={"Locations"} active={false} alert={undefined} link={"/locations"} />
+          <SidebarItem icon={<Drop size={32} />} text={"Riegos"} active={false} alert={undefined} link={"/irrigation"} />
         </Sidebar>
         <div className="flex-1">
           <Header />
 
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <p className="text-xl text-gray-600">Cargando datos históricos...</p>
+            <div className="p-[200px]">
+              <Spinner />
             </div>
           ) : (
             <div className="p-6">
               <h1 className="text-2xl font-bold text-gray-800 mb-6">Historial de Sensores</h1>
 
               <div className="mb-6">
-                <div className="bg-white p-4 rounded-xl shadow">
-                  <div className="flex flex-wrap gap-4 mb-4">
+                <div className="bg-white p-4 rounded-xl">
+                  <div className="flex flex-wrap gap-4 mb-4 font-semibold">
                     <button
-                      onClick={() => setSelectedSensor("humedad")}
-                      className={`px-4 py-2 rounded-lg ${selectedSensor === "humedad" ? "bg-blue-600 text-white" : "bg-gray-200"
+                      onClick={() => setSelectedSensor("humidity")}
+                      className={`px-4 py-2 rounded-lg ${selectedSensor === "humidity" ? "bg-blue-600 text-white" : "bg-gray-200 cursor-pointer"
                         }`}
                     >
                       Humedad
                     </button>
                     <button
-                      onClick={() => setSelectedSensor("temperatura")}
-                      className={`px-4 py-2 rounded-lg ${selectedSensor === "temperatura" ? "bg-red-600 text-white" : "bg-gray-200"
+                      onClick={() => setSelectedSensor("temperature")}
+                      className={`px-4 py-2 rounded-lg ${selectedSensor === "temperature" ? "bg-red-600 text-white" : "bg-gray-200 cursor-pointer"
                         }`}
                     >
                       Temperatura
                     </button>
                     <button
-                      onClick={() => setSelectedSensor("lluvia")}
-                      className={`px-4 py-2 rounded-lg ${selectedSensor === "lluvia" ? "bg-green-600 text-white" : "bg-gray-200"
+                      onClick={() => setSelectedSensor("rain")}
+                      className={`px-4 py-2 rounded-lg ${selectedSensor === "rain" ? "bg-green-600 text-white" : "bg-gray-200 cursor-pointer"
                         }`}
                     >
                       Lluvia
                     </button>
                     <button
-                      onClick={() => setSelectedSensor("sol")}
-                      className={`px-4 py-2 rounded-lg ${selectedSensor === "sol" ? "bg-yellow-600 text-white" : "bg-gray-200"
+                      onClick={() => setSelectedSensor("sun")}
+                      className={`px-4 py-2 rounded-lg ${selectedSensor === "sun" ? "bg-yellow-600 text-white" : "bg-gray-200 cursor-pointer"
                         }`}
                     >
                       Sol
@@ -154,8 +155,8 @@ export default function HistorialView() {
                 </div>
               </div>
 
-              <div className="bg-white p-4 rounded-xl shadow">
-                <h2 className="text-lg font-semibold mb-4">Registros Históricos</h2>
+              <div className="bg-white p-4 rounded-xl">
+                <h2 className="text-lg font-semibold mb-4">Registros</h2>
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">

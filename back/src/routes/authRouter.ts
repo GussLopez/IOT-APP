@@ -30,6 +30,15 @@ router.post('/login',
     AuthController.login
 )
 
+router.post('/confirm-account', 
+    body('token')
+        .notEmpty()
+        .isLength({min: 6, max: 6})
+        .withMessage('Token no válido'),
+    handleInputErrors,
+    AuthController.confirmAccount
+)
+
 router.get('/user', 
     authenticate,
     AuthController.user

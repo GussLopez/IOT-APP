@@ -8,29 +8,29 @@ export default function DataCards({ data }: any) {
     return (
         <>
             <Card
-                title={"Temperature"}
+                title={"Temperatura"}
                 icon={<Thermometer size={32}
                     color="#ff0061"
                     weight="fill"
                 />}
                 bgIconColor={"ffe8f1"}
-                data={data.temperatura} />
+                data={`${data.temperatura} °C`} />
             <Card
                 icon={<Drop size={32} color="#0052ff" weight="fill" />}
-                title={"HUMIDITY"}
-                data={data.humedad}
+                title={"Humedad"}
+                data={`${data.humedad} %`}
                 bgIconColor={"edf3ff"}
             />
             <Card
                 icon={<CloudRain size={32} color="#00b9ff" weight="fill" />}
-                title={"RAIN"}
-                data={data.lluvia}
+                title={"Lluvia"}
+                data={`${data.lluvia} mm`}
                 bgIconColor={"e8f9ff"}
             />
             <Card
                 icon={<SunHorizon size={32} color="#ff4000" weight="fill" />}
-                title={"SUN INTENSITY "}
-                data={data.sol}
+                title={"Sol "}
+                data={`${data.sol} W/m`}
                 bgIconColor={"ffebe4"}
             />
         </>

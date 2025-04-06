@@ -10,7 +10,8 @@ export default function Footer() {
                         <MetaLogo size={30} weight="bold" color="#0032ff" />
                         <p className="text-2xl font-semibold">Dashboard</p>
                     </div>
-                   
+                    <p className="text-gray-400">© 2025 Todos los derechos reservados</p>
+
                 </div>
             </footer>
         </>

@@ -25,7 +25,6 @@ export default function Map(data: any) {
 
     const addMarkers = () => {
       parcelas.forEach((parcela: any) => {
-        // Crear el contenido HTML del popup
         const popupHTML = `
           <div style="padding: 10px; max-width: 300px;">
             <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 8px; color: #3b82f6;">${parcela.nombre}</h3>

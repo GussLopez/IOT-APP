@@ -6,7 +6,7 @@ let previousParcelas: any[] = []
 
 export const fetchApiData = async () => {
   try {
-    const response = await axios.get("http://moriahmkt.com/iotapp/updated/")
+    const response = await axios.get("https://moriahmkt.com/iotapp/test/")
     return response.data
   } catch (error) {
     console.error("Error al obtener datos de la API:", error)

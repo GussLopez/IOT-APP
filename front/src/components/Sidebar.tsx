@@ -5,6 +5,7 @@ import { jwtDecode } from "jwt-decode"
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { CustomJwtPayload } from "../types"
+import { toast, Toaster } from 'sonner'
 
 type SidebarContextType = {
   expanded: boolean
@@ -41,8 +42,17 @@ export default function Sidebar({ children }: SidebarProps) {
   if (!decoded) {
     return null
   }
+
+  const handleLogout = () => {
+    toast.info('Cerrando sesión')
+    localStorage.removeItem('AUTH_TOKEN')
+    setTimeout(() => {
+      navigate('/auth/login')
+    }, 2000);
+  }
   return (
     <>
+    <Toaster richColors/>
       <aside className="sticky top-0 h-screen overflow-hidden">
         <nav className="h-full flex flex-col bg-white border-r border-gray-200 shadow-md">
           <div className="p-4 pb-2 flex justify-between items-center">
@@ -79,7 +89,10 @@ export default function Sidebar({ children }: SidebarProps) {
                 <h4 className="font-semibold">{decoded.name}</h4>
                 <span className="text-xs text-gray-600">{decoded.email}</span>
               </div>
-              <DotsThreeVertical weight="bold" className="hover:bg-gray-50 rounded-full w-8 h-8 p-1 cursor-pointer" />
+              <button onClick={handleLogout}>
+
+                <DotsThreeVertical weight="bold" className="hover:bg-gray-50 rounded-full w-8 h-8 p-1 cursor-pointer" />
+              </button>
             </div>
           </div>
         </nav>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { SquaresFour, ChartLine, MapPinArea, Clock, Trash } from "@phosphor-icons/react"
+import { SquaresFour, ChartLine, Trash, Clock, Drop } from "@phosphor-icons/react"
 import Sidebar, { SidebarItem } from "../components/Sidebar"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
@@ -11,8 +11,6 @@ import {
   Bar,
   LineChart,
   Line,
-  PieChart,
-  Pie,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -30,26 +28,26 @@ export default function StatsView() {
   const [savingData, setSavingData] = useState(false)
   const [saveStatus, setSaveStatus] = useState<{ success: boolean; message: string } | null>(null)
 
-  const timeOut = 10000 * 6
   const fetchData = async () => {
     try {
       setLoading((prevLoading) => {
+        // Only show loading on initial load, not on updates
         return prevLoading && !data
       })
-      const response = await axios.get("https://moriahmkt.com/iotapp/updated/")
+      const response = await axios.get("https://moriahmkt.com/iotapp/test/")
       setData(response.data)
       setLastUpdated(new Date())
       setLoading(false)
 
-      setTimeout(() => {
-        saveDataToDatabase()
-      }, timeOut);
+      // Guardar datos en la base de datos automáticamente
+      saveDataToDatabase()
     } catch (error) {
       console.log(error)
       setLoading(false)
     }
   }
 
+  // Función para guardar datos en la base de datos
   const saveDataToDatabase = async () => {
     try {
       setSavingData(true)
@@ -58,6 +56,7 @@ export default function StatsView() {
       console.log("Resultado del guardado:", result)
       setSaveStatus(result)
 
+      // Ocultar el mensaje después de 3 segundos
       setTimeout(() => {
         setSaveStatus(null)
       }, 3000)
@@ -72,20 +71,20 @@ export default function StatsView() {
       setSavingData(false)
     }
   }
-
   useEffect(() => {
     fetchData()
 
     const intervalId = setInterval(() => {
-      console.log("Actualizando datos...")
+      console.log("Updating data...")
       fetchData()
-    }, 20000)
+    }, 10000)
 
     return () => clearInterval(intervalId)
   }, [])
 
   const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"]
 
+  // Preparar datos para gráficas comparativas
   const prepareParcelasData = () => {
     if (!data || !data.parcelas) return []
     return data.parcelas.map((parcela: any) => ({
@@ -97,6 +96,7 @@ export default function StatsView() {
     }))
   }
 
+  // Preparar datos para gráfica de distribución de cultivos
   const prepareCultivosData = () => {
     if (!data || !data.parcelas) return []
 
@@ -117,7 +117,7 @@ export default function StatsView() {
           <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={true} alert={undefined} link={"/stats"} />
           <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
           <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-          <SidebarItem icon={<MapPinArea size={32} />} text={"Locations"} active={false} alert={undefined} link={"/locations"} />
+          <SidebarItem icon={<Drop size={32} />} text={"Riegos"} active={false} alert={undefined} link={"/irrigation"} />
         </Sidebar>
         <div className="flex-1">
           <Header />
@@ -143,7 +143,7 @@ export default function StatsView() {
                   <button
                     onClick={saveDataToDatabase}
                     disabled={savingData}
-                    className="bg-gradient-to-tr from-indigo-600 to-indigo-500 cursor-pointer text-white px-4 py-2 rounded-lg flex items-center transition-colors"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center"
                   >
                     {savingData ? (
                       <>
@@ -164,6 +164,7 @@ export default function StatsView() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Gráfica de barras - Comparación de humedad por parcela */}
                 <div className="bg-white p-4 rounded-xl shadow">
                   <h2 className="text-lg font-semibold mb-4">Humedad por Parcela</h2>
                   <div className="h-80">
@@ -223,29 +224,24 @@ export default function StatsView() {
                   </div>
                 </div>
 
-                {/* Gráfica de pastel - Distribución de tipos de cultivo */}
+                {/* Gráfica de barras horizontales - Distribución de tipos de cultivo */}
                 <div className="bg-white p-4 rounded-xl shadow">
                   <h2 className="text-lg font-semibold mb-4">Distribución de Cultivos</h2>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={prepareCultivosData()}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={true}
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                          outerRadius={80}
-                          fill="#8884d8"
-                          dataKey="value"
-                        >
+                      <BarChart data={prepareCultivosData()} layout="vertical" margin={{ top: 5, right: 30, left: 50, bottom: 5}}>
+                        <CartesianGrid strokeDasharray="3 3"/>
+                        <XAxis type="number" />
+                        <YAxis dataKey={"name"} type="category" />
+                        <Tooltip formatter={value => [`${value} parcelas`, 'Cantidad']} />
+                        <Legend />
+                        <Bar dataKey={"value"} name="Quantity per plot" fill="#8884d8">
                           {prepareCultivosData().map((entry, index) => (
                             <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
                           ))}
-                        </Pie>
-                        <Tooltip />
-                        <Legend />
-                      </PieChart>
+                        </Bar>
+
+                      </BarChart>
                     </ResponsiveContainer>
                   </div>
                 </div>
@@ -253,7 +249,7 @@ export default function StatsView() {
 
               {/* Resumen de datos generales */}
               <div className="mt-8 bg-white p-4 rounded-xl shadow">
-                <h2 className="text-lg font-semibold mb-4">Resumen de Sensores Generales</h2>
+                <h2 className="text-lg font-semibold mb-4">General Sensors Summary</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h3 className="text-sm text-blue-800 font-medium">Humedad</h3>

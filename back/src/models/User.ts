@@ -29,6 +29,17 @@ class User extends Model {
         type: DataType.STRING(60)
     })
     declare password: string
+
+    @Column({
+        type: DataType.STRING(6)
+    })
+   declare token: string
+
+   @Default(false)
+    @Column({
+        type: DataType.BOOLEAN
+    })
+    declare confirmed: Boolean
 }
 
 export default User
