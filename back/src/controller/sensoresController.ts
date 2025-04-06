@@ -1,7 +1,6 @@
 import type { Request, Response } from "express"
 import { Sensor } from "../models/Sensores"
 
-// Importamos la extensión de la interfaz Request
 import "../middleware/sensor"
 
 export class SensorController {

@@ -17,7 +17,6 @@ export default function ParcelasEliminadas() {
       try {
         const response = await axios.get(`http://localhost:3000/api/parcelas`)
         const api = response.data
-        // Filtrar solo las parcelas que no están disponibles
         const parcelasNoDisponibles = api.filter((parcela: any) => parcela.disponible === false)
         setParcelasEliminadas(parcelasNoDisponibles)
         setLoading(false)

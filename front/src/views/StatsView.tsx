@@ -31,7 +31,6 @@ export default function StatsView() {
   const fetchData = async () => {
     try {
       setLoading((prevLoading) => {
-        // Only show loading on initial load, not on updates
         return prevLoading && !data
       })
       const response = await axios.get("https://moriahmkt.com/iotapp/test/")
@@ -39,7 +38,6 @@ export default function StatsView() {
       setLastUpdated(new Date())
       setLoading(false)
 
-      // Guardar datos en la base de datos automáticamente
       saveDataToDatabase()
     } catch (error) {
       console.log(error)
@@ -47,7 +45,6 @@ export default function StatsView() {
     }
   }
 
-  // Función para guardar datos en la base de datos
   const saveDataToDatabase = async () => {
     try {
       setSavingData(true)
@@ -56,7 +53,6 @@ export default function StatsView() {
       console.log("Resultado del guardado:", result)
       setSaveStatus(result)
 
-      // Ocultar el mensaje después de 3 segundos
       setTimeout(() => {
         setSaveStatus(null)
       }, 3000)
@@ -84,7 +80,6 @@ export default function StatsView() {
 
   const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"]
 
-  // Preparar datos para gráficas comparativas
   const prepareParcelasData = () => {
     if (!data || !data.parcelas) return []
     return data.parcelas.map((parcela: any) => ({
@@ -96,7 +91,6 @@ export default function StatsView() {
     }))
   }
 
-  // Preparar datos para gráfica de distribución de cultivos
   const prepareCultivosData = () => {
     if (!data || !data.parcelas) return []
 

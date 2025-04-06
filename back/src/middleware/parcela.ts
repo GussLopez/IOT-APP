@@ -28,7 +28,7 @@ export const validateParcelaId = async (req: Request, res: Response, next: NextF
 
 export const validateParcelaExists = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { id } = req.params // Corregido: 'parcelaId' → 'id'
+    const { id } = req.params 
     const parcela = await Parcela.findByPk(id)
 
     if (!parcela) {

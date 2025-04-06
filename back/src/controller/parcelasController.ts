@@ -25,7 +25,6 @@ export class ParcelaController {
   }
 
   static getById = async (req: Request, res: Response) => {
-    // TypeScript ahora reconoce req.parcela gracias a la importación
     res.json(req.parcela)
   }
 

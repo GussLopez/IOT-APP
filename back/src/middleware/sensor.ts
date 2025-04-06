@@ -2,7 +2,6 @@ import type { Request, Response, NextFunction } from "express"
 import { param, validationResult } from "express-validator"
 import { Sensor } from "../models/Sensores"
 
-// Declaración global para extender la interfaz Request
 declare global {
   namespace Express {
     interface Request {

@@ -36,7 +36,6 @@ export const saveSensorData = async (sensorData: any) => {
   }
 }
 
-// Función para guardar los datos de parcelas
 export const saveParcelaData = async (parcelaData: any) => {
   try {
     console.log("Guardando datos de parcela:", parcelaData)
@@ -64,20 +63,17 @@ export const saveParcelaData = async (parcelaData: any) => {
 }
 
 export const detectDeletedParcelas = async (currentParcelas: any[]) => {
-  // Si no hay datos previos, solo guardamos los actuales y salimos
   if (previousParcelas.length === 0) {
     previousParcelas = [...currentParcelas]
     return []
   }
 
-  // Encontrar parcelas que estaban en la lista anterior pero no en la actual
   const deletedParcelas = previousParcelas.filter(
     (prevParcela) => !currentParcelas.some((currParcela) => currParcela.id === prevParcela.id),
   )
 
   console.log(`Detectadas ${deletedParcelas.length} parcelas eliminadas`)
 
-  // Registrar cada parcela eliminada
   for (const deletedParcela of deletedParcelas) {
     try {
       await axios.post(`${API_BASE_URL}/parcelas-eliminadas`, {
@@ -93,8 +89,6 @@ export const detectDeletedParcelas = async (currentParcelas: any[]) => {
       console.error(`Error al registrar parcela eliminada ${deletedParcela.nombre}:`, error)
     }
   }
-
-  // Actualizar la lista de parcelas previas
   previousParcelas = [...currentParcelas]
 
   return deletedParcelas

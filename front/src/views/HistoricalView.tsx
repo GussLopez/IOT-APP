@@ -30,7 +30,6 @@ export default function HistorialView() {
     fetchHistoricalData()
   }, [])
 
-  // Preparar datos para la gráfica de línea temporal
   const prepareTimelineData = () => {
     if (!historicalData || historicalData.length === 0) return []
 

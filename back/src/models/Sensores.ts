@@ -5,22 +5,22 @@ import { Table, Column, DataType, Model } from "sequelize-typescript"
 })
 export class Sensor extends Model {
   @Column({
-    type: DataType.DOUBLE, // Corregido: eliminado el parámetro de longitud
+    type: DataType.DOUBLE,
   })
   declare humedad: number
 
   @Column({
-    type: DataType.DOUBLE, // Corregido: eliminado el parámetro de longitud
+    type: DataType.DOUBLE,
   })
   declare temperatura: number
 
   @Column({
-    type: DataType.DOUBLE, // Corregido: eliminado el parámetro de longitud
+    type: DataType.DOUBLE,
   })
   declare lluvia: number
 
   @Column({
-    type: DataType.DOUBLE, // Corregido: eliminado el parámetro de longitud
+    type: DataType.DOUBLE,
   })
   declare sol: number
 }
