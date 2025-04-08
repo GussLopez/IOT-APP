@@ -10,6 +10,19 @@ import { MapContainer, TileLayer, Popup, CircleMarker, useMap } from "react-leaf
 import "leaflet/dist/leaflet.css"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
 
+interface IrrigationZone {
+  id: number
+  sector: string
+  nombre: string
+  tipo_riego: string
+  estado: string
+  latitud: number
+  longitud: number
+  motivo: string
+  fecha: string
+  color: string
+}
+
 function MapController({ zones }: { zones: IrrigationZone[] }) {
   const map = useMap()
 
@@ -31,19 +44,6 @@ function MapController({ zones }: { zones: IrrigationZone[] }) {
   }, [zones, map])
 
   return null
-}
-
-interface IrrigationZone {
-  id: number
-  sector: string
-  nombre: string
-  tipo_riego: string
-  estado: string
-  latitud: number
-  longitud: number
-  motivo: string
-  fecha: string
-  color: string
 }
 
 export default function IrrigationAreasView() {
@@ -73,22 +73,32 @@ export default function IrrigationAreasView() {
     fetchZones()
   }, [])
 
-  const nonFunctionalZones = zones.filter((zone) =>
-    ["mantenimiento", "descompuesto", "fuera de servicio"].includes(zone.estado.toLowerCase()),
-  )
+  const nonFunctionalStates = [
+    "mantenimiento",
+    "descompuesto",
+    "fuera_de_servicio",
+  ]
+
+  const nonFunctionalZones = zones.filter((zone) => {
+    const lowerCaseState = zone.estado.toLowerCase()
+    return nonFunctionalStates.some((state) => lowerCaseState.includes(state))
+  })
 
   const prepareStatusData = () => {
     const statusCount: Record<string, number> = {}
 
     zones.forEach((zone) => {
-      const status = zone.estado
-      statusCount[status] = (statusCount[status] || 0) + 1
+      const normalizedStatus = zone.estado.toLowerCase()
+      statusCount[normalizedStatus] = (statusCount[normalizedStatus] || 0) + 1
     })
 
-    return Object.entries(statusCount).map(([name, value]) => ({ name, value }))
+    return Object.entries(statusCount).map(([name, value]) => ({
+      name: name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " "), 
+      value,
+    }))
   }
 
-  const statusColors = ["#818cf8", "#6292c0", "#8eb5da", "#93c5fd", "#a78bfa", "#a78bfa"]
+  const statusColors = ["#4f46e5", "#65a30d", "#f97316", "#ff8042", "#0088FE", "#00C49F"]
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -98,6 +108,7 @@ export default function IrrigationAreasView() {
   const getMapCenter = () => {
     if (zones.length === 0) return [21.047, -86.848]
 
+    // Filtrar zonas con coordenadas válidas
     const validZones = zones.filter(
       (zone) =>
         typeof zone.latitud === "number" &&
@@ -114,6 +125,18 @@ export default function IrrigationAreasView() {
     return [sumLat / validZones.length, sumLng / validZones.length]
   }
 
+  const getStatusBgColor = (status: string) => {
+    const lowerStatus = status.toLowerCase()
+    if (lowerStatus.includes("mantenimiento")) return "bg-yellow-100 text-yellow-800"
+    if (lowerStatus.includes("fuera_de_servicio")) return "bg-purple-100 text-purple-800"
+    if (lowerStatus.includes("apagado")) return "bg-gray-100 text-gray-800"
+    return "bg-red-100 text-red-800"
+  }
+
+  const formatStatus = (status: string) => {
+    return status.replace(/_/g, " ")
+  }
+
   return (
     <>
       <main className="bg-[#f6f8fb] min-h-screen flex relative">
@@ -122,10 +145,11 @@ export default function IrrigationAreasView() {
           <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={false} alert={undefined} link={"/stats"} />
           <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
           <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-          <SidebarItem icon={<Drop size={32} />} text={"Riegos"} active={true} alert={undefined} link={"/irrigation"} />
+          <SidebarItem icon={<Drop size={32} />} text={"Zona de Riegos"} active={true} alert={undefined} link={"/irrigation"} />
         </Sidebar>
         <div className="flex-1">
           <Header />
+
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
@@ -134,12 +158,13 @@ export default function IrrigationAreasView() {
             <div className="text-red-500 text-center py-8">{error}</div>
           ) : (
             <div className="p-6">
-              <div className="flex items-center gap-5 mb-6">
-              <h1 className="text-2xl font-bold text-gray-800 ">Zonas de Riego</h1>
-              <Drop size={30} color="#818cf8" weight="fill" />
+              <div className="flex items-center mb-6 gap-5">
+                <h1 className="text-2xl font-bold text-gray-800">Zonas de Riego</h1>
+                <Drop size={30} color="#818cf8"/>
               </div>
 
-              <div className="bg-white p-4 rounded-xl mb-6">
+              {/* Mapa de zonas de riego */}
+              <div className="bg-white p-4 rounded-xl shadow mb-6">
                 <h2 className="text-lg font-semibold mb-4">Mapa de Zonas</h2>
                 <div className="h-[500px] rounded-lg overflow-hidden">
                   {zones.length > 0 ? (
@@ -184,19 +209,14 @@ export default function IrrigationAreasView() {
                                 <p>
                                   <span className="font-semibold">Estado:</span>
                                   <span
-                                    className={`ml-1 ${
-                                      zone.estado.toLowerCase() === "encendido"
+                                    className={`ml-1 ${zone.estado.toLowerCase() === "activo"
                                         ? "text-green-600"
                                         : zone.estado.toLowerCase() === "mantenimiento"
-                                          ? "text-blue-400"
-                                        : zone.estado.toLocaleLowerCase() === "fuera_de_servicio"
-                                          ? 'text-indigo-600'
-                                        : zone.estado.toLocaleLowerCase() === "apagado"
-                                          ? 'text-gray-400'
+                                          ? "text-yellow-600"
                                           : "text-red-600"
-                                    }`}
+                                      }`}
                                   >
-                                    {zone.estado}
+                                    {formatStatus(zone.estado)}
                                   </span>
                                 </p>
                                 {zone.estado.toLowerCase() !== "activo" && (
@@ -215,14 +235,15 @@ export default function IrrigationAreasView() {
                     </MapContainer>
                   ) : (
                     <div className="flex justify-center items-center h-full bg-gray-100 rounded-lg">
-                      <p className="text-gray-500">No hay datos disponibles</p>
+                      <p className="text-gray-500">No hay datos de zonas disponibles para mostrar en el mapa</p>
                     </div>
                   )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-4 rounded-xl">
+                {/* Lista de zonas no funcionales */}
+                <div className="bg-white p-4 rounded-xl shadow">
                   <div className="flex items-center mb-4">
                     <Warning size={24} className="text-yellow-500 mr-2" />
                     <h2 className="text-lg font-semibold">Zonas No Funcionales</h2>
@@ -272,13 +293,9 @@ export default function IrrigationAreasView() {
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <span
-                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                    zone.estado.toLowerCase() === "mantenimiento"
-                                      ? "bg-sky-100 text-sky-800"
-                                      : "bg-purple-100 text-purle-800"
-                                  }`}
+                                  className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBgColor(zone.estado)}`}
                                 >
-                                  {zone.estado}
+                                  {formatStatus(zone.estado)}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{zone.motivo}</td>
@@ -293,7 +310,8 @@ export default function IrrigationAreasView() {
                   )}
                 </div>
 
-                <div className="bg-white p-4 rounded-xl">
+                {/* Gráfico de distribución por estados */}
+                <div className="bg-white p-4 rounded-xl shadow">
                   <h2 className="text-lg font-semibold mb-4">Distribución por Estados</h2>
                   <div className="h-80">
                     <ResponsiveContainer width="100%" height="100%">
@@ -320,14 +338,15 @@ export default function IrrigationAreasView() {
                 </div>
               </div>
 
+              {/* Detalles de la zona seleccionada */}
               {selectedZone && (
-                <div className="mt-6 bg-white p-4 rounded-xl">
+                <div className="mt-6 bg-white p-4 rounded-xl shadow">
                   <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center">
                       <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: selectedZone.color }}></div>
                       <h2 className="text-lg font-semibold">Detalles de Zona: {selectedZone.nombre}</h2>
                     </div>
-                    <button onClick={() => setSelectedZone(null)} className="text-gray-500 hover:bg-gray-100 cursor-pointer px-2 py-1 rounded-full">
+                    <button onClick={() => setSelectedZone(null)} className="text-gray-500 hover:text-gray-700">
                       ✕
                     </button>
                   </div>
@@ -355,15 +374,14 @@ export default function IrrigationAreasView() {
                       <dl className="grid grid-cols-3 gap-2">
                         <dt className="text-sm font-medium text-gray-500">Estado:</dt>
                         <dd
-                          className={`text-sm col-span-2 ${
-                            selectedZone.estado.toLowerCase() === "activo"
+                          className={`text-sm col-span-2 ${selectedZone.estado.toLowerCase() === "activo"
                               ? "text-green-600"
                               : selectedZone.estado.toLowerCase() === "mantenimiento"
                                 ? "text-yellow-600"
                                 : "text-red-600"
-                          }`}
+                            }`}
                         >
-                          {selectedZone.estado}
+                          {formatStatus(selectedZone.estado)}
                         </dd>
 
                         {selectedZone.estado.toLowerCase() !== "activo" && (
@@ -394,4 +412,3 @@ export default function IrrigationAreasView() {
     </>
   )
 }
-

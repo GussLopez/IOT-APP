@@ -1,24 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { SquaresFour, ChartLine, Trash, Clock, Drop } from "@phosphor-icons/react"
+import { SquaresFour, ChartLine, MapPinArea, Clock, Trash, Drop } from "@phosphor-icons/react"
 import Sidebar, { SidebarItem } from "../components/Sidebar"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import axios from "axios"
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  Cell,
-} from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts"
 import { saveAllApiData } from "../services/dataService"
 
 export default function StatsView() {
@@ -31,6 +19,7 @@ export default function StatsView() {
   const fetchData = async () => {
     try {
       setLoading((prevLoading) => {
+        // Only show loading on initial load, not on updates
         return prevLoading && !data
       })
       const response = await axios.get("https://moriahmkt.com/iotapp/test/")
@@ -38,6 +27,7 @@ export default function StatsView() {
       setLastUpdated(new Date())
       setLoading(false)
 
+      // Guardar datos en la base de datos automáticamente
       saveDataToDatabase()
     } catch (error) {
       console.log(error)
@@ -45,6 +35,7 @@ export default function StatsView() {
     }
   }
 
+  // Función para guardar datos en la base de datos
   const saveDataToDatabase = async () => {
     try {
       setSavingData(true)
@@ -53,6 +44,7 @@ export default function StatsView() {
       console.log("Resultado del guardado:", result)
       setSaveStatus(result)
 
+      // Ocultar el mensaje después de 3 segundos
       setTimeout(() => {
         setSaveStatus(null)
       }, 3000)
@@ -67,30 +59,84 @@ export default function StatsView() {
       setSavingData(false)
     }
   }
+
   useEffect(() => {
+    // Fetch data immediately on component mount
     fetchData()
 
+    // Set up interval to fetch data every 10 seconds
     const intervalId = setInterval(() => {
-      console.log("Updating data...")
+      console.log("Actualizando datos...")
       fetchData()
-    }, 10000)
+    }, 10000) // 10000 ms = 10 seconds
 
+    // Clean up interval on component unmount
     return () => clearInterval(intervalId)
   }, [])
 
-  const colors = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"]
-
-  const prepareParcelasData = () => {
-    if (!data || !data.parcelas) return []
-    return data.parcelas.map((parcela: any) => ({
-      name: parcela.nombre,
-      humedad: parcela.sensor.humedad,
-      temperatura: parcela.sensor.temperatura,
-      lluvia: parcela.sensor.lluvia,
-      sol: parcela.sensor.sol,
-    }))
+  // Colores para las gráficas
+  const colors = {
+    temperatura: "#ff8042", // naranja/rojo
+    sol: "#ffc658", // amarillo
+    lluvia: "#82ca9d", // verde
+    humedad: "#8884d8", // azul/morado
   }
 
+  // Preparar datos para el histograma de temperatura y sol
+  const prepareTemperatureSunData = () => {
+    if (!data || !data.parcelas || data.parcelas.length === 0) return []
+
+    // Calcular promedios
+    const avgTemperature =
+      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.temperatura, 0) / data.parcelas.length
+    const avgSun =
+      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.sol, 0) / data.parcelas.length
+
+    // Crear datos para el histograma
+    return [
+      {
+        name: "Temperatura",
+        value: avgTemperature,
+        unit: "°C",
+        fill: colors.temperatura,
+      },
+      {
+        name: "Sol",
+        value: avgSun,
+        unit: "%",
+        fill: colors.sol,
+      },
+    ]
+  }
+
+  // Preparar datos para el histograma de lluvia y humedad
+  const prepareRainHumidityData = () => {
+    if (!data || !data.parcelas || data.parcelas.length === 0) return []
+
+    // Calcular promedios
+    const avgRain =
+      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.lluvia, 0) / data.parcelas.length
+    const avgHumidity =
+      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.humedad, 0) / data.parcelas.length
+
+    // Crear datos para el histograma
+    return [
+      {
+        name: "Lluvia",
+        value: avgRain,
+        unit: "mm",
+        fill: colors.lluvia,
+      },
+      {
+        name: "Humedad",
+        value: avgHumidity,
+        unit: "%",
+        fill: colors.humedad,
+      },
+    ]
+  }
+
+  // Preparar datos para gráfica de distribución de cultivos
   const prepareCultivosData = () => {
     if (!data || !data.parcelas) return []
 
@@ -100,19 +146,34 @@ export default function StatsView() {
       cultivosCount[cultivo] = (cultivosCount[cultivo] || 0) + 1
     })
 
-    return Object.entries(cultivosCount).map(([name, value]) => ({ name, value }))
+    return Object.entries(cultivosCount)
+      .map(([name, value]) => ({ name, value }))
+      .slice(0, 10) // Limit to 10 records
+  }
+
+  // Personalizar el tooltip para mostrar unidades
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
+          <p className="font-medium text-gray-900">{`${label}`}</p>
+          <p className="text-gray-700">{`${payload[0].value.toFixed(2)} ${payload[0].payload.unit}`}</p>
+        </div>
+      )
+    }
+    return null
   }
 
   return (
     <>
       <main className="bg-[#f6f8fb] min-h-screen flex relative">
-        <Sidebar>
-          <SidebarItem icon={<SquaresFour size={32} />} text={"Dashboard"} alert active={false} link={"/"} />
-          <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={true} alert={undefined} link={"/stats"} />
-          <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
-          <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-          <SidebarItem icon={<Drop size={32} />} text={"Riegos"} active={false} alert={undefined} link={"/irrigation"} />
-        </Sidebar>
+      <Sidebar>
+        <SidebarItem icon={<SquaresFour size={32} />} text={"Dashboard"} alert active={false} link={'/'} />
+        <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={true} alert={undefined} link={'/stats'} />
+        <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
+        <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
+        <SidebarItem icon={<Drop size={32} />} text={"Zona de Riegos"} active={false} alert={undefined} link={"/irrigation"} />
+      </Sidebar>
         <div className="flex-1">
           <Header />
 
@@ -157,93 +218,95 @@ export default function StatsView() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Gráfica de barras - Comparación de humedad por parcela */}
-                <div className="bg-white p-4 rounded-xl shadow">
-                  <h2 className="text-lg font-semibold mb-4">Humedad por Parcela</h2>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={prepareParcelasData()} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="humedad" fill="#8884d8" name="Humedad (%)" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+              {/* Histograma de Temperatura y Sol */}
+              <div className="bg-white p-4 rounded-xl shadow mb-6">
+                <h2 className="text-lg font-semibold mb-4">Promedio de Temperatura y Sol</h2>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={prepareTemperatureSunData()}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      barSize={100}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="value" name="Valor">
+                        {prepareTemperatureSunData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
-
-                {/* Gráfica de líneas - Temperatura por parcela */}
-                <div className="bg-white p-4 rounded-xl shadow">
-                  <h2 className="text-lg font-semibold mb-4">Temperatura por Parcela</h2>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={prepareParcelasData()} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Line
-                          type="monotone"
-                          dataKey="temperatura"
-                          stroke="#ff8042"
-                          name="Temperatura (°C)"
-                          strokeWidth={2}
-                        />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                <div className="text-center text-sm text-gray-500 mt-2">
+                  Promedio de temperatura y sol en todas las parcelas
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Gráfica de barras - Comparación de lluvia y sol */}
-                <div className="bg-white p-4 rounded-xl shadow">
-                  <h2 className="text-lg font-semibold mb-4">Lluvia y Sol por Parcela</h2>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={prepareParcelasData()} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip />
-                        <Legend />
-                        <Bar dataKey="lluvia" fill="#82ca9d" name="Lluvia (mm)" />
-                        <Bar dataKey="sol" fill="#ffc658" name="Sol (%)" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+              {/* Histograma de Lluvia y Humedad */}
+              <div className="bg-white p-4 rounded-xl shadow mb-6">
+                <h2 className="text-lg font-semibold mb-4">Promedio de Lluvia y Humedad</h2>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={prepareRainHumidityData()}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                      barSize={100}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="value" name="Valor">
+                        {prepareRainHumidityData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
+                <div className="text-center text-sm text-gray-500 mt-2">
+                  Promedio de lluvia y humedad en todas las parcelas
+                </div>
+              </div>
 
-                {/* Gráfica de barras horizontales - Distribución de tipos de cultivo */}
-                <div className="bg-white p-4 rounded-xl shadow">
-                  <h2 className="text-lg font-semibold mb-4">Distribución de Cultivos</h2>
-                  <div className="h-80">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={prepareCultivosData()} layout="vertical" margin={{ top: 5, right: 30, left: 50, bottom: 5}}>
-                        <CartesianGrid strokeDasharray="3 3"/>
-                        <XAxis type="number" />
-                        <YAxis dataKey={"name"} type="category" />
-                        <Tooltip formatter={value => [`${value} parcelas`, 'Cantidad']} />
-                        <Legend />
-                        <Bar dataKey={"value"} name="Quantity per plot" fill="#8884d8">
-                          {prepareCultivosData().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
-                          ))}
-                        </Bar>
-
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
+              {/* Distribución de cultivos */}
+              <div className="bg-white p-4 rounded-xl shadow mb-6">
+                <h2 className="text-lg font-semibold mb-4">Distribución de Cultivos</h2>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={prepareCultivosData()}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="name" type="category" />
+                      <Tooltip formatter={(value) => [`${value} parcelas`, "Cantidad"]} />
+                      <Legend />
+                      <Bar dataKey="value" name="Cantidad de parcelas" fill="#8884d8">
+                        {prepareCultivosData().map((entry, index) => (
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={
+                              colors[Object.keys(colors)[index % Object.keys(colors).length] as keyof typeof colors]
+                            }
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               </div>
 
               {/* Resumen de datos generales */}
-              <div className="mt-8 bg-white p-4 rounded-xl shadow">
-                <h2 className="text-lg font-semibold mb-4">General Sensors Summary</h2>
+              <div className="bg-white p-4 rounded-xl shadow">
+                <h2 className="text-lg font-semibold mb-4">Resumen de Sensores Generales</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <h3 className="text-sm text-blue-800 font-medium">Humedad</h3>
@@ -271,4 +334,3 @@ export default function StatsView() {
     </>
   )
 }
-

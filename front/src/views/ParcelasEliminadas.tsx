@@ -39,7 +39,7 @@ export default function ParcelasEliminadas() {
         <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={false} alert={undefined} link={'/stats'} />
         <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
         <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={true} alert={undefined} link={"/deleted"} />
-        <SidebarItem icon={<Drop size={32} />} text={"Riegos"} active={false} alert={undefined} link={"/irrigation"} />
+        <SidebarItem icon={<Drop size={32} />} text={"Zona de Riegos"} active={false} alert={undefined} link={"/irrigation"} />
       </Sidebar>
       <div className="flex-1">
         <Header />

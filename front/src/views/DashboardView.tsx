@@ -25,7 +25,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                axios.get('https://moriahmkt.com/iotapp/test/ ')
+                axios.get('https://moriahmkt.com/iotapp/update/ ')
                     .then((res) => {
                         setData(res.data);
                     })
@@ -48,7 +48,7 @@ export default function Dashboard() {
                     <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={false} alert={undefined} link={'/stats'} />
                     <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
                     <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-                    <SidebarItem icon={<Drop size={32} />} text={"Riegos"} active={false} alert={undefined} link={"/irrigation"} />
+                    <SidebarItem icon={<Drop size={32} />} text={"Zona de Riegos"} active={false} alert={undefined} link={"/irrigation"} />
 
 
                 </Sidebar>
