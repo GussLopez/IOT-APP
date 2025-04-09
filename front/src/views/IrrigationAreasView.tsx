@@ -52,13 +52,42 @@ export default function IrrigationAreasView() {
   const [error, setError] = useState<string | null>(null)
   const [selectedZone, setSelectedZone] = useState<IrrigationZone | null>(null)
 
+  // Definir colores para cada estado
+  const stateColors = {
+    encendido: "#10b981", // verde
+    apagado: "#9ca3af", // gris
+    mantenimiento: "#f97316", // naranja
+    descompuesto: "#ef4444", // rojo
+    fuera_de_servicio: "#8b5cf6", // morado
+  }
+
+  // Función para obtener el color según el estado
+  const getStateColor = (state: string) => {
+    const normalizedState = state.toLowerCase().trim()
+
+    if (normalizedState.includes("encendido")) return stateColors.encendido
+    if (normalizedState.includes("apagado")) return stateColors.apagado
+    if (normalizedState.includes("mantenimiento")) return stateColors.mantenimiento
+    if (normalizedState.includes("descompuesto")) return stateColors.descompuesto
+    if (normalizedState.includes("fuera_de_servicio") || normalizedState.includes("fuera de servicio"))
+      return stateColors.fuera_de_servicio
+
+    // Color por defecto si no coincide con ninguno de los estados
+    return "#3388ff"
+  }
+
   useEffect(() => {
     const fetchZones = async () => {
       try {
         setLoading(true)
         const response = await axios.get("https://moriahmkt.com/iotapp/am/")
         if (response.data && response.data.zonas) {
-          setZones(response.data.zonas)
+          // Asignar colores a las zonas según su estado
+          const zonesWithColors = response.data.zonas.map((zone: IrrigationZone) => ({
+            ...zone,
+            color: getStateColor(zone.estado),
+          }))
+          setZones(zonesWithColors)
         } else {
           setError("No se encontraron datos de zonas de riego")
         }
@@ -73,11 +102,7 @@ export default function IrrigationAreasView() {
     fetchZones()
   }, [])
 
-  const nonFunctionalStates = [
-    "mantenimiento",
-    "descompuesto",
-    "fuera_de_servicio",
-  ]
+  const nonFunctionalStates = ["mantenimiento", "descompuesto", "fuera_de_servicio"]
 
   const nonFunctionalZones = zones.filter((zone) => {
     const lowerCaseState = zone.estado.toLowerCase()
@@ -93,48 +118,40 @@ export default function IrrigationAreasView() {
     })
 
     return Object.entries(statusCount).map(([name, value]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " "), 
+      name: name.charAt(0).toUpperCase() + name.slice(1).replace(/_/g, " "),
       value,
+      color: getStateColor(name), // Usar los mismos colores para el gráfico
     }))
   }
-
-  const statusColors = ["#4f46e5", "#65a30d", "#f97316", "#ff8042", "#0088FE", "#00C49F"]
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
     return date.toLocaleString()
   }
 
-  const getMapCenter = () => {
-    if (zones.length === 0) return [21.047, -86.848]
-
-    // Filtrar zonas con coordenadas válidas
-    const validZones = zones.filter(
-      (zone) =>
-        typeof zone.latitud === "number" &&
-        typeof zone.longitud === "number" &&
-        !isNaN(zone.latitud) &&
-        !isNaN(zone.longitud),
-    )
-
-    if (validZones.length === 0) return [21.047, -86.848]
-
-    const sumLat = validZones.reduce((sum, zone) => sum + zone.latitud, 0)
-    const sumLng = validZones.reduce((sum, zone) => sum + zone.longitud, 0)
-
-    return [sumLat / validZones.length, sumLng / validZones.length]
-  }
-
   const getStatusBgColor = (status: string) => {
     const lowerStatus = status.toLowerCase()
-    if (lowerStatus.includes("mantenimiento")) return "bg-yellow-100 text-yellow-800"
-    if (lowerStatus.includes("fuera_de_servicio")) return "bg-purple-100 text-purple-800"
+    if (lowerStatus.includes("encendido")) return "bg-green-100 text-green-800"
     if (lowerStatus.includes("apagado")) return "bg-gray-100 text-gray-800"
-    return "bg-red-100 text-red-800"
+    if (lowerStatus.includes("mantenimiento")) return "bg-orange-100 text-orange-800"
+    if (lowerStatus.includes("descompuesto")) return "bg-red-100 text-red-800"
+    if (lowerStatus.includes("fuera_de_servicio")) return "bg-purple-100 text-purple-800"
+    return "bg-blue-100 text-blue-800"
   }
 
   const formatStatus = (status: string) => {
     return status.replace(/_/g, " ")
+  }
+
+  // Función para obtener el color de texto según el estado
+  const getStatusTextColor = (status: string) => {
+    const lowerStatus = status.toLowerCase()
+    if (lowerStatus.includes("encendido")) return "text-green-600"
+    if (lowerStatus.includes("apagado")) return "text-gray-600"
+    if (lowerStatus.includes("mantenimiento")) return "text-orange-600"
+    if (lowerStatus.includes("descompuesto")) return "text-red-600"
+    if (lowerStatus.includes("fuera_de_servicio")) return "text-purple-600"
+    return "text-blue-600"
   }
 
   return (
@@ -142,10 +159,34 @@ export default function IrrigationAreasView() {
       <main className="bg-[#f6f8fb] min-h-screen flex relative">
         <Sidebar>
           <SidebarItem icon={<SquaresFour size={32} />} text={"Dashboard"} alert active={false} link={"/"} />
-          <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={false} alert={undefined} link={"/stats"} />
-          <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
-          <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-          <SidebarItem icon={<Drop size={32} />} text={"Zona de Riegos"} active={true} alert={undefined} link={"/irrigation"} />
+          <SidebarItem
+            icon={<ChartLine size={32} />}
+            text={"Estadísticas"}
+            active={false}
+            alert={undefined}
+            link={"/stats"}
+          />
+          <SidebarItem
+            icon={<Clock size={32} />}
+            text={"Historial"}
+            active={false}
+            alert={undefined}
+            link={"/historial"}
+          />
+          <SidebarItem
+            icon={<Trash size={32} />}
+            text={"Eliminados"}
+            active={false}
+            alert={undefined}
+            link={"/deleted"}
+          />
+          <SidebarItem
+            icon={<Drop size={32} />}
+            text={"Zona de Riegos"}
+            active={true}
+            alert={undefined}
+            link={"/irrigation"}
+          />
         </Sidebar>
         <div className="flex-1">
           <Header />
@@ -160,7 +201,43 @@ export default function IrrigationAreasView() {
             <div className="p-6">
               <div className="flex items-center mb-6 gap-5">
                 <h1 className="text-2xl font-bold text-gray-800">Zonas de Riego</h1>
-                <Drop size={30} color="#818cf8"/>
+                <Drop size={30} color="#818cf8" />
+              </div>
+
+              {/* Leyenda de colores */}
+              <div className="bg-white p-4 rounded-xl shadow mb-6">
+                <h2 className="text-lg font-semibold mb-3">Leyenda de Estados</h2>
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: stateColors.encendido }}></div>
+                    <span className="text-sm">Encendido</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div className="w-4 h-4 rounded-full mr-2" style={{ backgroundColor: stateColors.apagado }}></div>
+                    <span className="text-sm">Apagado</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div
+                      className="w-4 h-4 rounded-full mr-2"
+                      style={{ backgroundColor: stateColors.mantenimiento }}
+                    ></div>
+                    <span className="text-sm">Mantenimiento</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div
+                      className="w-4 h-4 rounded-full mr-2"
+                      style={{ backgroundColor: stateColors.descompuesto }}
+                    ></div>
+                    <span className="text-sm">Descompuesto</span>
+                  </div>
+                  <div className="flex items-center">
+                    <div
+                      className="w-4 h-4 rounded-full mr-2"
+                      style={{ backgroundColor: stateColors.fuera_de_servicio }}
+                    ></div>
+                    <span className="text-sm">Fuera de servicio</span>
+                  </div>
+                </div>
               </div>
 
               {/* Mapa de zonas de riego */}
@@ -168,11 +245,7 @@ export default function IrrigationAreasView() {
                 <h2 className="text-lg font-semibold mb-4">Mapa de Zonas</h2>
                 <div className="h-[500px] rounded-lg overflow-hidden">
                   {zones.length > 0 ? (
-                    <MapContainer
-                      center={[21.047, -86.848]}
-                      zoom={15}
-                      style={{ height: "100%", width: "100%" }}
-                    >
+                    <MapContainer center={[21.047, -86.848]} zoom={15} style={{ height: "100%", width: "100%" }}>
                       <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -187,8 +260,8 @@ export default function IrrigationAreasView() {
                             center={[zone.latitud, zone.longitud]}
                             radius={10}
                             pathOptions={{
-                              color: zone.color || "#3388ff",
-                              fillColor: zone.color || "#3388ff",
+                              color: zone.color,
+                              fillColor: zone.color,
                               fillOpacity: 0.7,
                             }}
                             eventHandlers={{
@@ -208,18 +281,11 @@ export default function IrrigationAreasView() {
                                 </p>
                                 <p>
                                   <span className="font-semibold">Estado:</span>
-                                  <span
-                                    className={`ml-1 ${zone.estado.toLowerCase() === "activo"
-                                        ? "text-green-600"
-                                        : zone.estado.toLowerCase() === "mantenimiento"
-                                          ? "text-yellow-600"
-                                          : "text-red-600"
-                                      }`}
-                                  >
+                                  <span className={`ml-1 ${getStatusTextColor(zone.estado)}`}>
                                     {formatStatus(zone.estado)}
                                   </span>
                                 </p>
-                                {zone.estado.toLowerCase() !== "activo" && (
+                                {!zone.estado.toLowerCase().includes("encendido") && (
                                   <p>
                                     <span className="font-semibold">Motivo:</span> {zone.motivo}
                                   </p>
@@ -327,7 +393,7 @@ export default function IrrigationAreasView() {
                           dataKey="value"
                         >
                           {prepareStatusData().map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={statusColors[index % statusColors.length]} />
+                            <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
                         </Pie>
                         <Tooltip formatter={(value, name) => [`${value} zonas`, name]} />
@@ -373,18 +439,11 @@ export default function IrrigationAreasView() {
                       <h3 className="font-medium text-gray-700 mb-2">Estado y Ubicación</h3>
                       <dl className="grid grid-cols-3 gap-2">
                         <dt className="text-sm font-medium text-gray-500">Estado:</dt>
-                        <dd
-                          className={`text-sm col-span-2 ${selectedZone.estado.toLowerCase() === "activo"
-                              ? "text-green-600"
-                              : selectedZone.estado.toLowerCase() === "mantenimiento"
-                                ? "text-yellow-600"
-                                : "text-red-600"
-                            }`}
-                        >
+                        <dd className={`text-sm col-span-2 ${getStatusTextColor(selectedZone.estado)}`}>
                           {formatStatus(selectedZone.estado)}
                         </dd>
 
-                        {selectedZone.estado.toLowerCase() !== "activo" && (
+                        {!selectedZone.estado.toLowerCase().includes("encendido") && (
                           <>
                             <dt className="text-sm font-medium text-gray-500">Motivo:</dt>
                             <dd className="text-sm text-gray-900 col-span-2">{selectedZone.motivo}</dd>

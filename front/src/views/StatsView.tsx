@@ -1,12 +1,24 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { SquaresFour, ChartLine, MapPinArea, Clock, Trash, Drop } from "@phosphor-icons/react"
+import { SquaresFour, ChartLine, Clock, Trash, Drop } from "@phosphor-icons/react"
 import Sidebar, { SidebarItem } from "../components/Sidebar"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import axios from "axios"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from "recharts"
+import {
+  LineChart,
+  Line,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  Cell,
+  ComposedChart,
+} from "recharts"
 import { saveAllApiData } from "../services/dataService"
 
 export default function StatsView() {
@@ -19,15 +31,13 @@ export default function StatsView() {
   const fetchData = async () => {
     try {
       setLoading((prevLoading) => {
-        // Only show loading on initial load, not on updates
         return prevLoading && !data
       })
-      const response = await axios.get("https://moriahmkt.com/iotapp/test/")
+      const response = await axios.get("https://moriahmkt.com/iotapp/updated/")
       setData(response.data)
       setLastUpdated(new Date())
       setLoading(false)
 
-      // Guardar datos en la base de datos automáticamente
       saveDataToDatabase()
     } catch (error) {
       console.log(error)
@@ -35,7 +45,6 @@ export default function StatsView() {
     }
   }
 
-  // Función para guardar datos en la base de datos
   const saveDataToDatabase = async () => {
     try {
       setSavingData(true)
@@ -44,7 +53,6 @@ export default function StatsView() {
       console.log("Resultado del guardado:", result)
       setSaveStatus(result)
 
-      // Ocultar el mensaje después de 3 segundos
       setTimeout(() => {
         setSaveStatus(null)
       }, 3000)
@@ -61,82 +69,51 @@ export default function StatsView() {
   }
 
   useEffect(() => {
-    // Fetch data immediately on component mount
     fetchData()
 
-    // Set up interval to fetch data every 10 seconds
     const intervalId = setInterval(() => {
       console.log("Actualizando datos...")
       fetchData()
-    }, 10000) // 10000 ms = 10 seconds
+    }, 10000)
 
-    // Clean up interval on component unmount
     return () => clearInterval(intervalId)
   }, [])
 
-  // Colores para las gráficas
   const colors = {
-    temperatura: "#ff8042", // naranja/rojo
-    sol: "#ffc658", // amarillo
-    lluvia: "#82ca9d", // verde
-    humedad: "#8884d8", // azul/morado
+    temperatura: "#ff8042",
+    sol: "#ffc658",
+    lluvia: "#82ca9d",
+    humedad: "#8884d8",
   }
 
-  // Preparar datos para el histograma de temperatura y sol
+  // Preparar datos para el gráfico de líneas de temperatura y sol
   const prepareTemperatureSunData = () => {
     if (!data || !data.parcelas || data.parcelas.length === 0) return []
 
-    // Calcular promedios
-    const avgTemperature =
-      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.temperatura, 0) / data.parcelas.length
-    const avgSun =
-      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.sol, 0) / data.parcelas.length
-
-    // Crear datos para el histograma
-    return [
-      {
-        name: "Temperatura",
-        value: avgTemperature,
-        unit: "°C",
-        fill: colors.temperatura,
-      },
-      {
-        name: "Sol",
-        value: avgSun,
-        unit: "%",
-        fill: colors.sol,
-      },
-    ]
+    return data.parcelas
+      .map((parcela: any, index: number) => ({
+        name: `Parcela ${index + 1}`,
+        temperatura: parcela.sensor.temperatura,
+        sol: parcela.sensor.sol,
+      }))
+      .slice(0, 10) // Limitamos a 10 parcelas para mejor visualización
   }
 
-  // Preparar datos para el histograma de lluvia y humedad
+  // Preparar datos para el diagrama de Pareto de lluvia y humedad
   const prepareRainHumidityData = () => {
     if (!data || !data.parcelas || data.parcelas.length === 0) return []
 
-    // Calcular promedios
-    const avgRain =
-      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.lluvia, 0) / data.parcelas.length
-    const avgHumidity =
-      data.parcelas.reduce((sum: number, parcela: any) => sum + parcela.sensor.humedad, 0) / data.parcelas.length
+    // Extraer datos de parcelas y ordenar por lluvia (descendente)
+    const parcelasData = data.parcelas.map((parcela: any, index: number) => ({
+      name: `Parcela ${index + 1}`,
+      lluvia: parcela.sensor.lluvia,
+      humedad: parcela.sensor.humedad,
+    }))
 
-    // Crear datos para el histograma
-    return [
-      {
-        name: "Lluvia",
-        value: avgRain,
-        unit: "mm",
-        fill: colors.lluvia,
-      },
-      {
-        name: "Humedad",
-        value: avgHumidity,
-        unit: "%",
-        fill: colors.humedad,
-      },
-    ]
+    return parcelasData.sort((a: any, b: any) => b.lluvia - a.lluvia).slice(0, 10) // Limitamos a 10 parcelas para mejor visualización
   }
 
-  // Preparar datos para gráfica de distribución de cultivos
+  // Preparar datos para el diagrama de frecuencias de cultivos
   const prepareCultivosData = () => {
     if (!data || !data.parcelas) return []
 
@@ -146,18 +123,36 @@ export default function StatsView() {
       cultivosCount[cultivo] = (cultivosCount[cultivo] || 0) + 1
     })
 
-    return Object.entries(cultivosCount)
+    // Convertir a array y ordenar por cantidad (descendente)
+    const cultivosArray = Object.entries(cultivosCount)
       .map(([name, value]) => ({ name, value }))
-      .slice(0, 10) // Limit to 10 records
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 10)
+
+    // Calcular el porcentaje acumulado
+    const total = cultivosArray.reduce((sum, item) => sum + item.value, 0)
+    let accumulated = 0
+
+    return cultivosArray.map((item) => {
+      accumulated += item.value
+      return {
+        ...item,
+        percentage: (item.value / total) * 100,
+        accumulated: (accumulated / total) * 100,
+      }
+    })
   }
 
-  // Personalizar el tooltip para mostrar unidades
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 shadow-md rounded-md">
           <p className="font-medium text-gray-900">{`${label}`}</p>
-          <p className="text-gray-700">{`${payload[0].value.toFixed(2)} ${payload[0].payload.unit}`}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} style={{ color: entry.color }} className="text-gray-700">
+              {`${entry.name}: ${entry.value.toFixed(2)} ${entry.unit || ""}`}
+            </p>
+          ))}
         </div>
       )
     }
@@ -167,13 +162,37 @@ export default function StatsView() {
   return (
     <>
       <main className="bg-[#f6f8fb] min-h-screen flex relative">
-      <Sidebar>
-        <SidebarItem icon={<SquaresFour size={32} />} text={"Dashboard"} alert active={false} link={'/'} />
-        <SidebarItem icon={<ChartLine size={32} />} text={"Estadísticas"} active={true} alert={undefined} link={'/stats'} />
-        <SidebarItem icon={<Clock size={32} />} text={"Historial"} active={false} alert={undefined} link={"/historial"} />
-        <SidebarItem icon={<Trash size={32} />} text={"Eliminados"} active={false} alert={undefined} link={"/deleted"} />
-        <SidebarItem icon={<Drop size={32} />} text={"Zona de Riegos"} active={false} alert={undefined} link={"/irrigation"} />
-      </Sidebar>
+        <Sidebar>
+          <SidebarItem icon={<SquaresFour size={32} />} text={"Dashboard"} alert active={false} link={"/"} />
+          <SidebarItem
+            icon={<ChartLine size={32} />}
+            text={"Estadísticas"}
+            active={true}
+            alert={undefined}
+            link={"/stats"}
+          />
+          <SidebarItem
+            icon={<Clock size={32} />}
+            text={"Historial"}
+            active={false}
+            alert={undefined}
+            link={"/historial"}
+          />
+          <SidebarItem
+            icon={<Trash size={32} />}
+            text={"Eliminados"}
+            active={false}
+            alert={undefined}
+            link={"/deleted"}
+          />
+          <SidebarItem
+            icon={<Drop size={32} />}
+            text={"Zona de Riegos"}
+            active={false}
+            alert={undefined}
+            link={"/irrigation"}
+          />
+        </Sidebar>
         <div className="flex-1">
           <Header />
 
@@ -218,78 +237,107 @@ export default function StatsView() {
                 </div>
               </div>
 
-              {/* Histograma de Temperatura y Sol */}
+              {/* Gráfico de Líneas para Temperatura y Sol */}
               <div className="bg-white p-4 rounded-xl shadow mb-6">
-                <h2 className="text-lg font-semibold mb-4">Promedio de Temperatura y Sol</h2>
+                <h2 className="text-lg font-semibold mb-4">Temperatura y Sol por Parcela</h2>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={prepareTemperatureSunData()}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                      barSize={100}
-                    >
+                    <LineChart data={prepareTemperatureSunData()} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
+                      <YAxis yAxisId="left" orientation="left" stroke={colors.temperatura} />
+                      <YAxis yAxisId="right" orientation="right" stroke={colors.sol} />
+                      <Tooltip
+                        content={<CustomTooltip />}
+                        formatter={(value, name) => {
+                          const unit = name === "temperatura" ? "°C" : "%"
+                          return [value, name, unit]
+                        }}
+                      />
                       <Legend />
-                      <Bar dataKey="value" name="Valor">
-                        {prepareTemperatureSunData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
+                      <Line
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey="temperatura"
+                        name="Temperatura"
+                        stroke={colors.temperatura}
+                        activeDot={{ r: 8 }}
+                        unit="°C"
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="sol"
+                        name="Sol"
+                        stroke={colors.sol}
+                        activeDot={{ r: 8 }}
+                        unit="%"
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="text-center text-sm text-gray-500 mt-2">
-                  Promedio de temperatura y sol en todas las parcelas
+                  Temperatura y sol por parcela (primeras 10 parcelas)
                 </div>
               </div>
 
-              {/* Histograma de Lluvia y Humedad */}
+              {/* Diagrama de Pareto para Lluvia y Humedad */}
               <div className="bg-white p-4 rounded-xl shadow mb-6">
-                <h2 className="text-lg font-semibold mb-4">Promedio de Lluvia y Humedad</h2>
+                <h2 className="text-lg font-semibold mb-4">Diagrama de Pareto: Lluvia y Humedad</h2>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
+                    <ComposedChart
                       data={prepareRainHumidityData()}
                       margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
-                      barSize={100}
                     >
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
+                      <YAxis yAxisId="left" orientation="left" stroke={colors.lluvia} />
+                      <YAxis yAxisId="right" orientation="right" stroke={colors.humedad} />
+                      <Tooltip
+                        content={<CustomTooltip />}
+                        formatter={(value, name) => {
+                          const unit = name === "lluvia" ? "mm" : "%"
+                          return [value, name, unit]
+                        }}
+                      />
                       <Legend />
-                      <Bar dataKey="value" name="Valor">
-                        {prepareRainHumidityData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
+                      <Bar yAxisId="left" dataKey="lluvia" name="Lluvia" fill={colors.lluvia} unit="mm" />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="humedad"
+                        name="Humedad"
+                        stroke={colors.humedad}
+                        unit="%"
+                      />
+                    </ComposedChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="text-center text-sm text-gray-500 mt-2">
-                  Promedio de lluvia y humedad en todas las parcelas
+                  Parcelas ordenadas por cantidad de lluvia (mm) con humedad (%)
                 </div>
               </div>
 
-              {/* Distribución de cultivos */}
+              {/* Diagrama de Frecuencias para Cultivos */}
               <div className="bg-white p-4 rounded-xl shadow mb-6">
-                <h2 className="text-lg font-semibold mb-4">Distribución de Cultivos</h2>
+                <h2 className="text-lg font-semibold mb-4">Diagrama de Frecuencias: Distribución de Cultivos</h2>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={prepareCultivosData()}
-                      layout="vertical"
-                      margin={{ top: 5, right: 30, left: 50, bottom: 5 }}
-                    >
+                    <ComposedChart data={prepareCultivosData()} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="name" type="category" />
-                      <Tooltip formatter={(value) => [`${value} parcelas`, "Cantidad"]} />
+                      <XAxis dataKey="name" />
+                      <YAxis yAxisId="left" orientation="left" />
+                      <YAxis yAxisId="right" orientation="right" domain={[0, 100]} unit="%" />
+                      <Tooltip
+                        formatter={(value, name) => {
+                          if (name === "accumulated") return [`${value.toFixed(2)}%`, "Porcentaje acumulado"]
+                          if (name === "percentage") return [`${value.toFixed(2)}%`, "Porcentaje"]
+                          return [value, "Cantidad de parcelas"]
+                        }}
+                      />
                       <Legend />
-                      <Bar dataKey="value" name="Cantidad de parcelas" fill="#8884d8">
+                      <Bar yAxisId="left" dataKey="value" name="Cantidad" fill="#8884d8">
                         {prepareCultivosData().map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
@@ -299,8 +347,19 @@ export default function StatsView() {
                           />
                         ))}
                       </Bar>
-                    </BarChart>
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="accumulated"
+                        name="% Acumulado"
+                        stroke="#ff7300"
+                        dot={true}
+                      />
+                    </ComposedChart>
                   </ResponsiveContainer>
+                </div>
+                <div className="text-center text-sm text-gray-500 mt-2">
+                  Distribución de cultivos con porcentaje acumulado
                 </div>
               </div>
 

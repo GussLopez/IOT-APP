@@ -59,7 +59,7 @@ export default function ParcelasEliminadas() {
             <p className="text-sm mt-2">Cuando una parcela sea eliminada de la API, aparecerá aquí.</p>
           </div>
         ) : (
-          <div className="bg-white  py-3 px-6 mx-5 rounded-lg">
+          <div className="bg-white  py-3 px-6 mx-5 rounded-lg mb-10">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 ">
                 <thead className="bg-indigo-300 text-white">

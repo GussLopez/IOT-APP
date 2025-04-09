@@ -21,7 +21,6 @@ export default function HistorialView() {
       try {
         setLoading(true)
         const response = await axios.get("http://localhost:4000/api/sensores")
-        // Ordenar los datos por fecha (más recientes primero)
         const sortedData = response.data.sort(
           (a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )
@@ -39,7 +38,6 @@ export default function HistorialView() {
   const prepareTimelineData = () => {
     if (!historicalData || historicalData.length === 0) return []
 
-    // Tomar solo los últimos 10 registros para la gráfica (o menos si hay menos)
     return historicalData.slice(0, 10).map((record) => ({
       fecha: new Date(record.createdAt).toLocaleString(),
       humedad: record.humedad,
@@ -49,13 +47,11 @@ export default function HistorialView() {
     }))
   }
 
-  // Calcular paginación para la tabla
   const indexOfLastRecord = currentPage * recordsPerPage
   const indexOfFirstRecord = indexOfLastRecord - recordsPerPage
   const currentRecords = historicalData.slice(indexOfFirstRecord, indexOfLastRecord)
   const totalPages = Math.ceil(historicalData.length / recordsPerPage)
 
-  // Cambiar de página
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
   return (
@@ -263,7 +259,6 @@ export default function HistorialView() {
 
                       {/* Mostrar números de página */}
                       {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
-                        // Calcular qué páginas mostrar
                         let pageNum
                         if (totalPages <= 5) {
                           pageNum = i + 1

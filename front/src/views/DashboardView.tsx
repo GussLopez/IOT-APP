@@ -25,7 +25,7 @@ export default function Dashboard() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                axios.get('https://moriahmkt.com/iotapp/update/ ')
+                axios.get('https://moriahmkt.com/iotapp/updated/ ')
                     .then((res) => {
                         setData(res.data);
                     })
@@ -68,7 +68,7 @@ export default function Dashboard() {
                             </div>
                         </div>
                     </div>
-                    <Parcelas data={data?.parcelas || []} />
+                    {/* <Parcelas data={data?.parcelas || []} /> */}
                 </div>
             </main>
             <Footer />
